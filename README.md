@@ -13,17 +13,18 @@ Node.js, Express, MongoDB, JWT, and API Gateway implementation for the Role-Base
 | User Service | `user-service` | 3004 |
 | MongoDB | Docker/local MongoDB | 27017 |
 
-## Gateway Endpoints
+## Gateway Routing
 
-| Method | Endpoint | Role |
+The gateway routes by service prefix, then forwards the remaining path to the target microservice. New endpoints inside a microservice do not need new gateway routes.
+
+| Prefix | Forwarded To | Role |
 |---|---|---|
-| POST | `/register/userregister` | Public |
-| POST | `/auth/login` | Public |
-| GET | `/admin/searchuser` | `admin` |
-| GET | `/admin/viewalluser` | `admin` |
-| DELETE | `/admin/deluser` | `admin` |
-| GET | `/user/viewprofile` | `user` |
-| PUT | `/user/updateprofile` | `user` |
+| `/register/*` | Registration Service | Public |
+| `/auth/*` | Login Service | Public |
+| `/admin/*` | Admin Service | `admin` |
+| `/user/*` | User Service | `user` |
+
+Examples: `POST /register/userregister`, `POST /auth/login`, `GET /admin/viewalluser`, `GET /user/viewprofile`.
 
 ## Setup
 
@@ -31,7 +32,11 @@ Node.js, Express, MongoDB, JWT, and API Gateway implementation for the Role-Base
 2. Copy each `.env.example` file to `.env` in the same folder.
 3. Use the same `JWT_SECRET`, `GATEWAY_API_KEY`, and `MONGO_URL` values in all services.
 4. Install dependencies in each service folder with `npm install` if `node_modules` is not present.
-5. Start each service from its folder with `npm start`.
+5. Start services:
+   - All five in one terminal with automatic restarts: `node start-all.js` from the repository root.
+   - One service from its folder: `npm start`, or `npm run dev` for automatic restarts with nodemon.
+
+Press `Ctrl+C` once to stop all services started by `start-all.js`.
 
 ## Postman
 
@@ -46,4 +51,4 @@ The collection stores login tokens automatically and includes the required secur
 
 ## Security Notes
 
-The API Gateway validates JWTs and roles. Internal microservices also require `x-internal-api-key`, so direct client access to ports `3001-3004` is rejected.
+The API Gateway validates JWTs and roles by route prefix, then forwards trusted identity headers to internal services. Internal microservices also require `x-internal-api-key`, so direct client access to ports `3001-3004` is rejected.

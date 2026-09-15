@@ -38,6 +38,20 @@ Examples: `POST /register/userregister`, `POST /auth/login`, `GET /admin/viewall
 
 Press `Ctrl+C` once to stop all services started by `start-all.js`.
 
+## Tests
+
+Each service uses Node.js native tests and does not need extra test dependencies:
+
+```bash
+npm --prefix registration-service test
+npm --prefix login-service test
+npm --prefix admin-service test
+npm --prefix user-service test
+npm --prefix api-gateway test
+```
+
+When service behavior, API contracts, security rules, routing, validation, or persistence logic changes, update the affected test files in the same change.
+
 ## Postman
 
 Import `Role-BasedUMS.postman_collection.json` into Postman and run requests against `http://localhost:3000`.

@@ -37,8 +37,10 @@
 
 ## Verification
 
-- There is no lint or CI in this repo. API Gateway has a small native Node test suite with `npm --prefix api-gateway test`.
+- There is no lint or CI in this repo. Each service has native Node tests with `npm --prefix <service-folder> test`.
+- When service behavior, API contracts, security rules, routing, validation, or persistence logic changes, update the affected test files in the same change.
 - Syntax-check changed service entrypoints with `node --check server.js` from the service folder.
+- Run focused service tests after changes, or all tests with `npm --prefix registration-service test`, `npm --prefix login-service test`, `npm --prefix admin-service test`, `npm --prefix user-service test`, and `npm --prefix api-gateway test`.
 - Check gateway availability with `GET http://localhost:3000/health`.
 - Import `Role-BasedUMS.postman_collection.json` into Postman for the assignment's functional/security scenarios.
 - Treat `TEST_REPORT.md` as historical evidence only; rerun focused checks after code changes.

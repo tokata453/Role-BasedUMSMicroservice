@@ -81,13 +81,19 @@ test("gateway forwards by prefix and enforces roles", async () => {
     const port = gateway.address().port;
     const adminToken = jwt.sign({ id: "1", email: "admin@example.com", role: "admin" }, process.env.JWT_SECRET);
     const userToken = jwt.sign({ id: "2", email: "user@example.com", role: "user" }, process.env.JWT_SECRET);
+    const expiredToken = jwt.sign({ id: "3", email: "old@example.com", role: "admin" }, process.env.JWT_SECRET, { expiresIn: "-1s" });
 
     try {
+        assert.equal((await request(port, "GET", "/health")).status, 200);
+
         // Public prefixes forward without JWT; protected prefixes reject missing or wrong-role tokens.
         assert.equal((await request(port, "POST", "/register/newendpoint?x=1", { body: { name: "A" } })).status, 200);
         assert.equal((await request(port, "POST", "/auth/anything", { body: { email: "a@b.com" } })).status, 200);
         assert.equal((await request(port, "GET", "/admin/newthing")).status, 401);
+        assert.equal((await request(port, "GET", "/admin/newthing", { token: "wrong.token.value" })).status, 401);
+        assert.equal((await request(port, "GET", "/admin/newthing", { token: expiredToken })).status, 401);
         assert.equal((await request(port, "GET", "/admin/newthing", { token: userToken })).status, 403);
+        assert.equal((await request(port, "GET", "/user/profile-extra", { token: adminToken })).status, 403);
         assert.equal((await request(port, "DELETE", "/admin/newthing?id=9", { token: adminToken })).status, 200);
         assert.equal((await request(port, "PUT", "/user/profile-extra", { token: userToken, body: { phone: "123" } })).status, 200);
 

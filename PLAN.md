@@ -87,7 +87,7 @@ These should match the assignment paths exposed through the API Gateway.
 
 ## Build Order
 
-1. Add root `.gitignore` for `node_modules`, `.env`, logs, and OS files.
+1. Add root `.gitignore` for `node_modules`, `.env`, and OS files.
 2. Standardize environment configuration across services.
 3. Fix User model imports and password hashing.
 4. Implement API Gateway server and Axios forwarding.

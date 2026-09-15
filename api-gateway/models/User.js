@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
+// Shared user schema copy for API Gateway.
+// Keep every service copy compatible because all services read and write the same MongoDB collection.
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -11,15 +13,17 @@ const UserSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 
-// Hash password before saving
+// Hash password only when it changes so profile updates do not hash an existing hash again.
 UserSchema.pre("save", async function(next) {
     if (!this.isModified("password")) return next();
+
+    // bcrypt salt factor 10 matches existing saved hashes and keeps registration cost reasonable.
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
 });
 
-// Method to compare password
+// Login service uses this helper to compare submitted plain text with stored bcrypt hash.
 UserSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };

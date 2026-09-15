@@ -2,11 +2,14 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
+// Admin search supports partial name or email lookup for assignment scenarios.
+// Passwords are always excluded because admin views should not expose hashes.
 router.get("/searchuser", async (req, res) => {
     try {
         const { name, email } = req.query;
         if (!name && !email) return res.status(400).json({ message: "Please provide name or email to search" });
 
+        // Build only requested filters so name and email can be used independently or together.
         let filter = {};
         if (name) filter.name = { $regex: name, $options: "i" };
         if (email) filter.email = { $regex: email, $options: "i" };
@@ -21,6 +24,8 @@ router.get("/searchuser", async (req, res) => {
     }
 });
 
+// Admin list endpoint returns every user document minus password hashes.
+// Gateway role middleware is responsible for ensuring only admin JWTs reach here.
 router.get("/viewalluser", async (req, res) => {
     try {
         const users = await User.find().select("-password");
@@ -31,6 +36,8 @@ router.get("/viewalluser", async (req, res) => {
     }
 });
 
+// Admin delete endpoint keeps the assignment's email query contract.
+// deleteOne avoids returning deleted document data after the operation.
 router.delete("/deluser", async (req, res) => {
     try {
         const { email } = req.query;

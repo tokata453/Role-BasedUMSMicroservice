@@ -3,7 +3,10 @@ const http = require("node:http");
 const test = require("node:test");
 const jwt = require("jsonwebtoken");
 
+// Captures every forwarded request so assertions can verify routing and trusted headers.
 const requests = [];
+
+// Test-specific environment must be set before requiring the gateway because routes read URLs on load.
 process.env.JWT_SECRET = "test-secret";
 process.env.GATEWAY_API_KEY = "test-internal-key";
 process.env.REGISTRATION_SERVICE_URL = "http://127.0.0.1:3101/api/registration";
@@ -13,12 +16,14 @@ process.env.USER_SERVICE_URL = "http://127.0.0.1:3104/api/user";
 
 const app = require("../server");
 
+// Minimal body reader keeps the test dependency-free and works for gateway and mock services.
 const readBody = (req) => new Promise((resolve) => {
     let body = "";
     req.on("data", (chunk) => { body += chunk; });
     req.on("end", () => resolve(body));
 });
 
+// Mock downstream service records what the gateway sends and returns a JSON success response.
 const createMockService = (port, name) => new Promise((resolve) => {
     const server = http.createServer(async (req, res) => {
         const body = await readBody(req);
@@ -39,9 +44,11 @@ const createMockService = (port, name) => new Promise((resolve) => {
     server.listen(port, "127.0.0.1", () => resolve(server));
 });
 
+// Helpers wrap native http server lifecycle in promises for async test cleanup.
 const listen = (server) => new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 const close = (server) => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 
+// Sends a real HTTP request to the gateway without supertest or extra dependencies.
 const request = (port, method, path, { token, body } = {}) => new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : "";
     const req = http.request({
@@ -62,6 +69,7 @@ const request = (port, method, path, { token, body } = {}) => new Promise((resol
     req.end(data);
 });
 
+// Integration-style gateway test: prefix routing, auth failures, role failures, and header forwarding.
 test("gateway forwards by prefix and enforces roles", async () => {
     const mocks = await Promise.all([
         createMockService(3101, "registration"),
@@ -75,6 +83,7 @@ test("gateway forwards by prefix and enforces roles", async () => {
     const userToken = jwt.sign({ id: "2", email: "user@example.com", role: "user" }, process.env.JWT_SECRET);
 
     try {
+        // Public prefixes forward without JWT; protected prefixes reject missing or wrong-role tokens.
         assert.equal((await request(port, "POST", "/register/newendpoint?x=1", { body: { name: "A" } })).status, 200);
         assert.equal((await request(port, "POST", "/auth/anything", { body: { email: "a@b.com" } })).status, 200);
         assert.equal((await request(port, "GET", "/admin/newthing")).status, 401);
@@ -82,18 +91,22 @@ test("gateway forwards by prefix and enforces roles", async () => {
         assert.equal((await request(port, "DELETE", "/admin/newthing?id=9", { token: adminToken })).status, 200);
         assert.equal((await request(port, "PUT", "/user/profile-extra", { token: userToken, body: { phone: "123" } })).status, 200);
 
+        // Remaining path and query string must be appended to each service base URL.
         assert.deepEqual(requests.map((item) => [item.service, item.method, item.url]), [
             ["registration", "POST", "/api/registration/newendpoint?x=1"],
             ["login", "POST", "/api/login/anything"],
             ["admin", "DELETE", "/api/admin/newthing?id=9"],
             ["user", "PUT", "/api/user/profile-extra"]
         ]);
+
+        // Gateway must include internal key and trusted JWT claims for downstream services.
         assert.equal(requests[2].apiKey, "test-internal-key");
         assert.equal(requests[2].authEmail, "admin@example.com");
         assert.equal(requests[2].authRole, "admin");
         assert.equal(requests[3].authEmail, "user@example.com");
         assert.deepEqual(requests[3].body, { phone: "123" });
     } finally {
+        // Always close sockets so node:test can exit cleanly after failures too.
         await close(gateway);
         await Promise.all(mocks.map(close));
     }

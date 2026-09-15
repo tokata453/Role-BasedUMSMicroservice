@@ -8,10 +8,8 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["user", "admin"], required: true },
-    phone: { type: String },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now }
-});
+    phone: { type: String }
+}, { timestamps: true });
 
 // Hash password only when it changes so profile updates do not hash an existing hash again.
 UserSchema.pre("save", async function(next) {

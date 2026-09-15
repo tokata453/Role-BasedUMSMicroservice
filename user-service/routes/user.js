@@ -30,7 +30,8 @@ router.put("/updateprofile", async (req, res) => {
         if (!name && !phone) return res.status(400).json({ message: "Name or phone is required" });
 
         // Build a small update object so omitted fields remain unchanged.
-        const update = { updatedAt: Date.now() };
+        // Mongoose timestamps update updatedAt automatically.
+        const update = {};
         if (name) update.name = name;
         if (phone) update.phone = phone;
 

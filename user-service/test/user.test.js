@@ -109,6 +109,7 @@ test("user service binds profile reads and updates to trusted gateway identity",
         assert.equal(updateCalls[1].update.phone, "123");
         assert.equal(Object.hasOwn(updateCalls[1].update, "email"), false);
         assert.equal(Object.hasOwn(updateCalls[1].update, "role"), false);
+        assert.equal(Object.hasOwn(updateCalls[1].update, "updatedAt"), false);
         assert.deepEqual(updateCalls[1].options, { new: true, runValidators: true });
     } finally {
         User.findOne = originalFindOne;

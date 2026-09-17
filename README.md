@@ -34,6 +34,7 @@ Examples: `POST /register/userregister`, `POST /auth/login`, `GET /admin/viewall
 4. Install dependencies in each service folder with `npm install` if `node_modules` is not present.
 5. Start services:
    - All five in one terminal with automatic restarts: `node start-all.js` from the repository root.
+   - EC2-1 production stack only: `node start-ec2-1.js` from the repository root. This starts Registration, Login, and API Gateway with `npm start`.
    - One service from its folder: `npm start`, or `npm run dev` for automatic restarts with nodemon.
 
 Press `Ctrl+C` once to stop all services started by `start-all.js`.
